@@ -61,19 +61,53 @@ in the browser.
 ## Performance
 
 chunkwise parses a real Markdown AST (`remark`/`unified`), which costs more
-per call than the regex-based scanning the libraries above use — measured
+per call than the regex-based scanning the libraries below use — measured
 against `@langchain/textsplitters`, `llm-splitter`, and `@chonkiejs/core` on
-the same documents, chunkwise is roughly 100-300x slower (single-digit
-milliseconds vs. sub-millisecond, on a ~21KB document). Profiling traced
-this entirely to the AST parse itself (`remark-gfm`'s table support roughly
-doubles it); the token counter and the packing algorithm are not the
-bottleneck. That gap is the real cost of the guarantee this library sells:
-in the same benchmark, two of those faster libraries each broke a small
-code fence that was well under the token budget — something that can't
-happen here, by construction, since blocks are real AST nodes, not regex
-guesses. In absolute terms this is noise next to a single embeddings API
-call; it matters mainly for very large batch ingestion. See the sibling
-`chunkwise-test` project for the full methodology and numbers.
+the same ~21KB document, chunkwise takes ~5.5ms against their 0.04-0.26ms —
+roughly 20-140x slower depending on the library. Profiling traced this
+entirely to the AST parse itself (dropping `remark-gfm` and hand-rolling
+table detection already cut it in half; the token counter and the packing
+algorithm are not the bottleneck). That gap is the real cost of the
+guarantee this library sells: in the same benchmark, across 34 fixtures
+covering structural edge cases, `llm-splitter` and `@chonkiejs/core`'s
+`RecursiveChunker` each broke blocks — a code fence, a table row — that were
+well under the token budget and should have stayed whole. chunkwise didn't,
+on any fixture, by construction: blocks are real AST nodes, not regex
+guesses. Full methodology, all 34 fixtures, and the numbers:
+[jarstorm/chunkwise-test](https://github.com/jarstorm/chunkwise-test).
+
+To see the actual chunk-by-chunk output side by side (chunkwise vs. the
+other three libraries, per fixture, with broken splits highlighted in red):
+
+```bash
+git clone https://github.com/jarstorm/chunkwise-test.git
+cd chunkwise-test
+npm install
+npm run report   # writes reports/*.html
+```
+
+Then open `reports/index.html` directly in a browser (it's static,
+self-contained HTML — no server needed) and pick a fixture.
+
+### Does the trade-off pay off?
+
+Depends on where chunking sits in your pipeline:
+
+- **Usually yes.** In absolute terms the slowdown is noise: ~0.1-0.6ms on a
+  typical few-KB document, ~5.5ms on a large one — against a single
+  embeddings API call at 50-200ms+. RAG chunking is normally an offline or
+  async ingestion step, not a request-path hot loop, so those milliseconds
+  are free. Meanwhile a broken code fence or table row produces a
+  nonsensical embedding that silently degrades retrieval quality — a
+  correctness bug baked into your index, much more expensive to find than
+  to avoid. Speed is cheap to buy back later (more workers, batch in
+  parallel); a corrupted chunk in production isn't.
+- **Maybe not** if you're ingesting at extreme scale (hundreds of millions
+  of documents, where the aggregate CPU cost shows up on an infra bill), if
+  chunking sits on a hard-latency synchronous path, or if your content is
+  plain prose with no code or tables — the failure mode this library
+  prevents can't happen to that content anyway, so there's nothing to buy
+  with the extra cost.
 
 ## Custom tokenizer
 
