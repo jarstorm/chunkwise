@@ -8,6 +8,12 @@ character count.
 npm install @jarstorm/chunkwise
 ```
 
+> **Not published to npm yet.** The command above will work once the package
+> is released under the `@jarstorm` scope. Until then, clone this repo and
+> `npm link` it, or depend on it with `file:../chunkwise`. Note that the
+> unscoped `chunkwise` package on npm is an unrelated library (multipart S3
+> uploads) — that is not this project.
+
 ```js
 import { chunkMarkdown } from "@jarstorm/chunkwise";
 
