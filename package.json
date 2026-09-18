@@ -1,5 +1,5 @@
 {
-  "name": "chunkwise",
+  "name": "@jarstorm/chunkwise",
   "version": "0.1.0",
   "description": "Structure-aware Markdown chunker for RAG pipelines — splits by headings, code blocks and tables instead of fixed character windows.",
   "type": "module",
@@ -39,6 +39,9 @@
     "text-splitter"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "gpt-tokenizer": "^2.1.1",
     "mdast-util-to-string": "^4.0.0",

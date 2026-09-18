@@ -5,11 +5,11 @@ keeps code blocks and tables intact — instead of cutting at a fixed
 character count.
 
 ```bash
-npm install chunkwise
+npm install @jarstorm/chunkwise
 ```
 
 ```js
-import { chunkMarkdown } from "chunkwise";
+import { chunkMarkdown } from "@jarstorm/chunkwise";
 
 const chunks = chunkMarkdown(markdownSource, {
   maxTokens: 500,     // default 500
